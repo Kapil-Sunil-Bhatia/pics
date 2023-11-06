@@ -1,0 +1,112 @@
+#Create a simulator object 
+set ns [new Simulator] 
+#Open the nam trace file 
+set nf [open s1.nam w] 
+$ns namtrace-all $nf 
+#Open the nam trace file 
+set nf1 [open s1.tr w] 
+$ns trace-all $nf1 
+#Define a 'finish' procedure 
+proc finish {} { 
+ global ns nf nf1 
+ $ns flush-trace 
+#Close the trace file 
+ close $nf 
+close $nf1  
+#Execute nam on the trace file 
+ exec nam s1.nam & 
+ exit 0 
+} 
+#Create two nodes 
+set n0 [$ns node] 
+set n1 [$ns node] 
+#Create a duplex link between the nodes 
+$ns duplex-link $n0 $n1 1Mb 10ms DropTail 
+#Create a UDP agent and attach it to node n0 
+set udp0 [new Agent/UDP] 
+$ns attach-agent $n0 $udp0 
+# Create a CBR traffic source and attach it to udp0 set cbr0 [new Application/Traffic/CBR] 
+$cbr0 set packetSize_ 500 
+$cbr0 set interval_ 0.005 
+$cbr0 attach-agent $udp0 
+#Create a Null agent (a traffic sink) and attach it to node n1 set null0 [new Agent/Null] 
+$ns attach-agent $n1 $null0 
+#Connect the traffic source with the traffic sink $ns connect $udp0 $null0  
+#Schedule events for the CBR agent 
+$ns at 0.5 "$cbr0 start" 
+$ns at 4.5 "$cbr0 stop" 
+#Call the finish procedure after 5 seconds of simulation time $ns at 5.0 "finish" 
+#Run the simulation 
+$ns run
+
+---------------------------------------------
+
+
+set ns [new Simulator] 
+#Define different colors for data flows (for NAM) $ns color 1 Blue 
+$ns color 2 Red 
+#Open the Trace files 
+set file1 [open out.tr w] 
+$ns trace-all $file1 
+#Open the NAM trace file 
+set file2 [open out.nam w] 
+$ns namtrace-all $file2 
+#Define a 'finish' procedure 
+proc finish {} { 
+ global ns file1 file2 
+ $ns flush-trace 
+ close $file1 
+ close $file2 
+ exec nam out.nam & 
+ exit 0 
+} 
+#Create six nodes 
+set n0 [$ns node] 
+set n1 [$ns node] 
+set n2 [$ns node] 
+set n3 [$ns node] 
+set n4 [$ns node] 
+set n5 [$ns node] 
+$ns at 0.1 "$n1 label \"CBR\"" 
+$ns at 1.0 "$n0 label \"FTP\"" 
+#Create links between the nodes 
+$ns duplex-link $n0 $n2 2Mb 10ms DropTail $ns duplex-link $n1 $n2 2Mb 10ms DropTail $ns simplex-link $n2 $n3 0.3Mb 100ms DropTail $ns simplex-link $n3 $n2 0.3Mb 100ms DropTail $ns duplex-link $n3 $n4 0.5Mb 40ms DropTail $ns duplex-link $n3 $n5 0.5Mb 30ms DropTail 
+#Give node position (for NAM) 
+$ns duplex-link-op $n0 $n2 orient right-down $ns duplex-link-op $n1 $n2 orient right-up $ns simplex-link-op $n2 $n3 orient right $ns simplex-link-op $n3 $n2 orient left $ns duplex-link-op $n3 $n4 orient right-up $ns duplex-link-op $n3 $n5 orient right-down 
+#Set Queue Size of link (n2-n3) to 10 $ns queue-limit $n2 $n3 10 
+#Setup a TCP connection 
+set tcp [new Agent/TCP]
+$ns attach-agent $n0 $tcp 
+set sink [new Agent/TCPSink] $ns attach-agent $n4 $sink 
+$ns connect $tcp $sink 
+$tcp set fid_ 1 
+$tcp set window_ 8000 
+$tcp set packetSize_ 552 
+#Setup a FTP over TCP connection set ftp [new Application/FTP] $ftp attach-agent $tcp 
+$ftp set type_ FTP 
+#Setup a UDP connection 
+set udp [new Agent/UDP] 
+$ns attach-agent $n1 $udp 
+set null [new Agent/Null] 
+$ns attach-agent $n5 $null 
+$ns connect $udp $null 
+$udp set fid_ 2 
+#Setup a CBR over UDP connection set cbr [new Application/Traffic/CBR] $cbr attach-agent $udp 
+$cbr set type_ CBR 
+$cbr set packet_size_ 1000 
+$cbr set rate_ 0.01mb 
+$cbr set random_ false 
+$ns at 0.1 "$cbr start" 
+$ns at 1.0 "$ftp start" 
+$ns at 624.0 "$ftp stop" 
+$ns at 624.5 "$cbr stop" 
+# Trace Congestion Window and RTT  set file [open cwnd_rtt.tr w] $tcp attach $file 
+$tcp trace cwnd_ 
+$tcp trace rtt_  
+$ns at 625.0 "finish" 
+$ns run
+
+
+
+
+

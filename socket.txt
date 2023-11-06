@@ -1,0 +1,115 @@
+Socket programming using TCP 
+Server Side:
+import socket
+def server_program():
+ # get the hostname
+ host = socket.gethostname()
+ port = 5000 # initiate port no above 1024
+ server_socket = socket.socket() # get instance
+ # look closely. The bind() function takes tuple as 
+argument
+ server_socket.bind((host, port)) # bind host address and 
+port together
+ # configure how many client the server can listen 
+simultaneously
+ server_socket.listen(2)
+ conn, address = server_socket.accept() # accept new 
+connection
+ print("Connection from: " + str(address))
+ while True:
+ # receive data stream. it won't accept data packet 
+greater than 1024 bytes
+ data = conn.recv(1024).decode()
+ if not data:
+ # if data is not received break
+ break
+ print("from connected user: " + str(data))
+ data = input(' -> ')
+ conn.send(data.encode()) # send data to the client
+ conn.close() # close the connection
+if __name__ == '__main__':
+ server_program()
+
+
+Client Side:
+import socket
+def client_program():
+ host = socket.gethostname() # as both code is running on 
+same pc
+ port = 5000 # socket server port number
+ client_socket = socket.socket() # instantiate
+ client_socket.connect((host, port)) # connect to the 
+server
+ message = input(" -> ") # take input
+ while message.lower().strip() != 'bye':
+ client_socket.send(message.encode()) # send message
+ data = client_socket.recv(1024).decode() # receive 
+response
+ print('Received from server: ' + data) # show in 
+terminal
+ message = input(" -> ") # again take input
+ client_socket.close() # close the connection
+if __name__ == '__main__':
+ client_program()
+
+
+socket programming using UDP 
+Server Side:
+import socket
+# Define the server IP address and port
+server_ip = '127.0.0.1' # Replace with your server's IP 
+address or use 'localhost' for local testing
+server_port = 12345 # Choose a port number
+# Create a UDP socket
+server_socket = socket.socket(socket.AF_INET, 
+socket.SOCK_DGRAM)
+# Bind the socket to the server address and port
+server_socket.bind((server_ip, server_port))
+print(f"Server listening on {server_ip}:{server_port}")
+while True:
+ try:
+ # Receive data from the client
+ data, client_address = server_socket.recvfrom(1024)
+ print(f"Received message from {client_address}: 
+{data.decode('utf-8')}")
+ # Process the received data (You can add your own 
+logic here)
+ # Send a response back to the client
+ response = "Message received by the server."
+ server_socket.sendto(response.encode('utf-8'), 
+client_address)
+ except KeyboardInterrupt:
+ print("Server terminated by the user.")
+ break
+# Close the server socket
+server_socket.close()
+
+Client Side:
+import socket
+# Define the server IP address and port
+server_ip = '127.0.0.1' # Replace with the server's IP 
+address or use 'localhost' for local testing
+server_port = 12345 # Match the server's port number
+# Create a UDP socket
+client_socket = socket.socket(socket.AF_INET, 
+socket.SOCK_DGRAM)
+while True:
+ try:
+ # Get user input
+ message = input("Enter a message (or 'exit' to quit): 
+")
+ if message.lower() == 'exit':
+ break
+ # Send the message to the server
+ client_socket.sendto(message.encode('utf-8'), 
+(server_ip, server_port))
+ # Receive a response from the server
+ response, server_address = 
+client_socket.recvfrom(1024)
+ print(f"Response from server ({server_address}): 
+{response.decode('utf-8')}")
+ except KeyboardInterrupt:
+ print("Client terminated by the user.")
+ break
+# Close the client socket
+client_socket.close()
